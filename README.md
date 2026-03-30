@@ -83,7 +83,7 @@ No installation required 🚀
 
 ![Login](./login.png)
 ![Home](./home.png)
-![Track Funds](./track-funds.png)
+![Track-Funds](./track-funds.png)
 ![Reports](./reports.png)
 
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------
