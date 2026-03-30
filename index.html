@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Expense Tracker</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- ============================================================
+       CSS STARTS HERE
+  ============================================================ -->
+  <style>
+    /* ── RESET & BASE ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+  --bg-deep:    #f4f7fb;   /* light background */
+  --bg-card:    #ffffff;   /* white cards */
+  --bg-card2:   #f1f5f9;   /* soft light gray */
+  --border:     #e2e8f0;   /* subtle border */
+  --accent:     #3b82f6;
+  --accent-glow:#2563eb;
+  --green:      #16a34a;
+  --red:        #dc2626;
+  --text:       #0f172a;   /* dark text */
+  --muted:      #64748b;
+  --nav-bg:     #ffffff;   /* white navbar */
+}
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: var(--bg-deep);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── PAGE SYSTEM ── */
+    .page { display: none; animation: fadeIn .3s ease; }
+    .page.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* ── NAVBAR ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      background: var(--nav-bg);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 2rem; height: 52px;
+    }
+    nav .brand {
+      font-size: .75rem; font-weight: 700; letter-spacing: .15em;
+      color: var(--text); text-transform: uppercase;
+    }
+    nav .nav-links { display: flex; align-items: center; gap: .5rem; }
+    nav .nav-links button {
+      background: none; border: none; cursor: pointer;
+      color: var(--muted); font-family: 'Poppins', sans-serif;
+      font-size: .85rem; padding: .4rem .85rem; border-radius: 6px;
+      transition: color .2s, background .2s;
+    }
+    nav .nav-links button:hover { color: var(--text); background: var(--border); }
+    nav .nav-links button.active { color: var(--text); font-weight: 600; }
+    nav .nav-links button.logout-btn {
+      border: 1px solid var(--border); color: var(--text); margin-left: .5rem;
+    }
+    nav .nav-links button.logout-btn:hover { background: var(--border); }
+
+    /* ── MAIN CONTENT ── */
+    .main-content { padding-top: 52px; }
+    .container { max-width: 1340px; margin: 0 auto; padding: 2.5rem 2rem; }
+
+    /* ── LOGIN PAGE ── */
+    #login-page {
+      display: flex; align-items: center; justify-content: center;
+      min-height: 100vh;
+      background: radial-gradient(ellipse at 60% 40%, #0f1f3d 0%, var(--bg-deep) 70%);
+    }
+    .login-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 2.5rem 2.2rem;
+      width: 100%; max-width: 440px;
+      box-shadow: 0 25px 60px rgba(0,0,0,.5);
+    }
+    .login-card h1 { font-size: 1.9rem; font-weight: 700; margin-bottom: .4rem; }
+    .login-card p.subtitle { color: var(--muted); font-size: .9rem; margin-bottom: 1.8rem; }
+
+    .form-group { margin-bottom: 1.2rem; }
+    .form-group label {
+      display: block; font-size: .7rem; font-weight: 600;
+      letter-spacing: .1em; color: var(--muted); text-transform: uppercase;
+      margin-bottom: .5rem;
+    }
+    .form-group input, .form-group select {
+      width: 100%; background: var(--bg-card2);
+      border: 1px solid var(--border); border-radius: 10px;
+      padding: .75rem 1rem; color: var(--text);
+      font-family: 'Poppins', sans-serif; font-size: .9rem;
+      outline: none; transition: border-color .2s;
+    }
+    .form-group input:focus, .form-group select:focus { border-color: var(--accent); }
+    .form-group input::placeholder { color: var(--muted); }
+
+    .btn-primary {
+      width: 100%; padding: .85rem;
+      background: linear-gradient(135deg, var(--accent), #60a5fa);
+      border: none; border-radius: 50px; color: #fff;
+      font-family: 'Poppins', sans-serif; font-size: 1rem; font-weight: 600;
+      cursor: pointer; transition: opacity .2s, transform .15s;
+      margin-top: .5rem;
+    }
+    .btn-primary:hover { opacity: .9; transform: translateY(-1px); }
+    .btn-primary:active { transform: translateY(0); }
+
+    .login-note { text-align: center; color: var(--muted); font-size: .78rem; margin-top: 1.2rem; }
+    .error-msg { color: var(--red); font-size: .8rem; margin-top: .5rem; display: none; }
+
+    /* ── HOME PAGE ── */
+    .page-header h2 { font-size: 1.6rem; font-weight: 700; }
+    .page-header p { color: var(--muted); margin-top: .3rem; font-size: .9rem; }
+    .user-greeting { text-align: right; color: var(--muted); font-size: .82rem; margin-top: -.5rem; }
+
+    .stats-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 1.2rem; margin-top: 1.8rem;
+    }
+    .stat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px; padding: 1.8rem 1.5rem;
+    }
+    .stat-card .stat-label {
+      font-size: .68rem; font-weight: 600; letter-spacing: .12em;
+      text-transform: uppercase; color: var(--muted);
+    }
+    .stat-card .stat-value {
+      font-size: 2rem; font-weight: 700; margin-top: .8rem;
+    }
+    .stat-card .stat-value.income { color: var(--green); }
+    .stat-card .stat-value.expense { color: var(--red); }
+    .stat-card .stat-value.balance { color: var(--text); }
+
+    /* ── TRACK FUNDS PAGE ── */
+    .track-grid {
+      display: grid; grid-template-columns: 1fr 1.6fr;
+      gap: 1.5rem; margin-top: 1.8rem;
+      align-items: start;
+    }
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px; padding: 1.8rem;
+    }
+    .card h3 { font-size: 1.1rem; font-weight: 600; margin-bottom: 1.4rem; }
+
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+
+    .form-group select option { background: var(--bg-card2); }
+
+    .btn-save {
+      width: 100%; padding: .8rem;
+      background: linear-gradient(135deg, var(--accent), #60a5fa);
+      border: none; border-radius: 10px; color: #fff;
+      font-family: 'Poppins', sans-serif; font-size: .95rem; font-weight: 600;
+      cursor: pointer; transition: opacity .2s, transform .15s; margin-top: .8rem;
+    }
+    .btn-save:hover { opacity: .9; transform: translateY(-1px); }
+
+    /* Transaction History */
+    .tx-list { display: flex; flex-direction: column; gap: .8rem; }
+    .tx-item {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: .9rem 1.1rem; background: var(--bg-card2);
+      border: 1px solid var(--border); border-radius: 10px;
+      transition: border-color .2s;
+    }
+    .tx-item:hover { border-color: #2a3a5a; }
+    .tx-info .tx-title { font-size: .92rem; font-weight: 500; }
+    .tx-info .tx-meta { font-size: .75rem; color: var(--muted); margin-top: .2rem; }
+    .tx-meta .tx-tag {
+      display: inline-block; border: 1px solid var(--border);
+      border-radius: 50px; padding: .1rem .5rem; margin-left: .3rem;
+      font-size: .7rem;
+    }
+    .tx-right { display: flex; align-items: center; gap: .8rem; }
+    .tx-amount { font-weight: 600; font-size: .95rem; }
+    .tx-amount.income { color: var(--green); }
+    .tx-amount.expense { color: var(--red); }
+    .tx-delete {
+      background: none; border: none; cursor: pointer;
+      color: var(--muted); font-size: 1rem; transition: color .2s;
+      line-height: 1;
+    }
+    .tx-delete:hover { color: var(--red); }
+    .empty-state { color: var(--muted); font-size: .85rem; text-align: center; padding: 1.5rem; }
+
+    /* ── REPORTS PAGE ── */
+    .reports-stats {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 1.2rem; margin-top: 1.8rem;
+    }
+    .chart-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px; padding: 1.8rem;
+      margin-top: 1.5rem;
+    }
+    .chart-card h3 { font-size: 1rem; font-weight: 600; margin-bottom: 1.2rem; }
+    .chart-wrap { position: relative; height: 360px; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 900px) {
+      .stats-grid, .reports-stats { grid-template-columns: 1fr 1fr; }
+      .track-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 600px) {
+      .stats-grid, .reports-stats { grid-template-columns: 1fr; }
+      .form-row { grid-template-columns: 1fr; }
+    }
+  </style>
+  <!-- ============================================================
+       CSS ENDS HERE
+  ============================================================ -->
+</head>
+<body>
+
+<!-- ============================================================
+     HTML STRUCTURE STARTS HERE
+============================================================ -->
+
+<!-- ── LOGIN PAGE ── -->
+<div id="login-page" class="page active">
+  <div class="login-card">
+    <h1>Expense Tracker</h1>
+    <p class="subtitle">Stay on top of your money, effortlessly.</p>
+
+    <div class="form-group">
+      <label for="uid">User ID</label>
+      <input type="text" id="uid" placeholder="Enter your user ID"/>
+    </div>
+    <div class="form-group">
+      <label for="pwd">Password</label>
+      <input type="password" id="pwd" placeholder="Enter your password"/>
+    </div>
+    <p class="error-msg" id="login-error">Please enter both User ID and Password.</p>
+    <button class="btn-primary" onclick="handleLogin()">Login</button>
+    <p class="login-note">Demo only – credentials are stored locally in this browser.</p>
+  </div>
+</div>
+
+<!-- ── APP SHELL (Nav + Pages) ── -->
+<div id="app" style="display:none;">
+
+  <!-- NAVBAR -->
+  <nav>
+    <div class="brand">Expense Tracker</div>
+    <div class="nav-links">
+      <button id="nav-home"   class="active"  onclick="showPage('home')">Home</button>
+      <button id="nav-track"             onclick="showPage('track')">Track Funds</button>
+      <button id="nav-reports"           onclick="showPage('reports')">Reports</button>
+      <button class="logout-btn"         onclick="handleLogout()">Logout</button>
+    </div>
+  </nav>
+
+  <div class="main-content">
+
+    <!-- HOME PAGE -->
+    <div id="home-page" class="page active">
+      <div class="container">
+        <div class="page-header">
+          <h2>Welcome to Expense Tracker</h2>
+          <p>Overview of your income, expenses, and current balance.</p>
+        </div>
+        <p class="user-greeting" id="user-greeting"></p>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-label">Total Income</div>
+            <div class="stat-value income" id="home-income">₹0.00</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Total Expenses</div>
+            <div class="stat-value expense" id="home-expense">₹0.00</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Current Balance</div>
+            <div class="stat-value balance" id="home-balance">₹0.00</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TRACK FUNDS PAGE -->
+    <div id="track-page" class="page">
+      <div class="container">
+        <div class="page-header">
+          <h2>Track Funds</h2>
+          <p>Add incomes and expenses to keep everything organised.</p>
+        </div>
+        <div class="track-grid">
+          <!-- ADD TRANSACTION FORM -->
+          <div class="card">
+            <h3>Add Transaction</h3>
+            <div class="form-group">
+  <label>Monthly Budget (₹)</label>
+  <input type="number" id="monthly-budget" placeholder="Enter budget"/>
+</div>
+            <div class="form-group">
+              <label>Title</label>
+              <input type="text" id="tx-title" placeholder="e.g. Salary, Groceries"/>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label>Amount (₹)</label>
+                <input type="number" id="tx-amount" placeholder="0.00" min="0" step="0.01"/>
+              </div>
+              <div class="form-group">
+                <label>Type</label>
+                <select id="tx-type">
+                  <option value="expense">Expense</option>
+                  <option value="income">Income</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label>Category</label>
+                <select id="tx-category">
+                  <option value="">Select category</option>
+                  <option>Food</option>
+                  <option>Rent</option>
+                  <option>Transport</option>
+                  <option>Salary</option>
+                  <option>Freelance</option>
+                  <option>Shopping</option>
+                  <option>Health</option>
+                  <option>Education</option>
+                  <option>Entertainment</option>
+                  <option>Other</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Date</label>
+                <input type="date" id="tx-date"/>
+              </div>
+            </div>
+
+            <p class="error-msg" id="tx-error">Please fill all fields.</p>
+            <p class="error-msg" id="budget-alert" style="display:none;">
+  ⚠️ Budget exceeded!
+</p>
+            <button class="btn-save" onclick="saveTransaction()">Save Transaction</button>
+          </div>
+
+          <!-- TRANSACTION HISTORY -->
+          <div class="card">
+            <h3>Transaction History</h3>
+            <div class="tx-list" id="tx-list">
+              <p class="empty-state">No transactions yet. Add one!</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- REPORTS PAGE -->
+    <div id="reports-page" class="page">
+      <div class="container">
+        <div class="page-header">
+          <h2>Reports</h2>
+          <p>Visual overview of your income and expenses.</p>
+        </div>
+        <div class="reports-stats">
+          <div class="stat-card">
+            <div class="stat-label">Total Income</div>
+            <div class="stat-value income" id="rep-income">₹0.00</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Total Expenses</div>
+            <div class="stat-value expense" id="rep-expense">₹0.00</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Net Balance</div>
+            <div class="stat-value balance" id="rep-balance">₹0.00</div>
+          </div>
+        </div>
+        <div class="chart-card">
+          <h3>Income vs Expense</h3>
+          <div class="chart-wrap">
+            <canvas id="bar-chart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end main-content -->
+</div><!-- end app -->
+
+<!-- ============================================================
+     HTML STRUCTURE ENDS HERE
+============================================================ -->
+
+<!-- ============================================================
+     JAVASCRIPT STARTS HERE
+============================================================ -->
+<script>
+  // ── STORAGE HELPERS ──────────────────────────────────────────
+  const getUser    = ()  => localStorage.getItem('it_user');
+  const setUser    = (u) => localStorage.setItem('it_user', u);
+  const clearUser  = ()  => localStorage.removeItem('it_user');
+
+  const getTx = () => JSON.parse(localStorage.getItem('it_transactions') || '[]');
+  const setTx = (arr) => localStorage.setItem('it_transactions', JSON.stringify(arr));
+  const getBudget = () => parseFloat(localStorage.getItem('it_budget')) || 0;
+const setBudget = (b) => localStorage.setItem('it_budget', b);
+
+  // ── INIT ─────────────────────────────────────────────────────
+  document.addEventListener('DOMContentLoaded', () => {
+    // Set today's date as default
+    document.getElementById('tx-date').valueAsDate = new Date();
+
+    if (getUser()) {
+      bootApp();
+    }
+  });
+
+  // ── LOGIN ─────────────────────────────────────────────────────
+  function handleLogin() {
+    const uid = document.getElementById('uid').value.trim();
+    const pwd = document.getElementById('pwd').value.trim();
+    const err = document.getElementById('login-error');
+
+    if (!uid || !pwd) {
+      err.style.display = 'block';
+      return;
+    }
+    err.style.display = 'none';
+    setUser(uid);
+    bootApp();
+  }
+
+  // Allow Enter key on login
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && document.getElementById('login-page').classList.contains('active')) {
+      handleLogin();
+    }
+  });
+
+  // ── LOGOUT ────────────────────────────────────────────────────
+  function handleLogout() {
+    clearUser();
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('login-page').classList.add('active');
+    document.getElementById('login-page').style.display = 'flex';
+    document.getElementById('uid').value = '';
+    document.getElementById('pwd').value = '';
+  }
+
+  // ── BOOT APP ──────────────────────────────────────────────────
+  function bootApp() {
+    document.getElementById('login-page').style.display = 'none';
+    document.getElementById('login-page').classList.remove('active');
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('user-greeting').textContent = `Logged in as ${getUser()}`;
+    showPage('home');
+  }
+
+  // ── PAGE NAVIGATION ───────────────────────────────────────────
+  let barChart = null;
+
+  function showPage(name) {
+    // Hide all inner pages
+    document.querySelectorAll('#app .page').forEach(p => p.classList.remove('active'));
+    document.getElementById(name + '-page').classList.add('active');
+
+    // Update nav active state
+    ['home','track','reports'].forEach(n => {
+      const btn = document.getElementById('nav-' + n);
+      if (btn) btn.classList.toggle('active', n === name);
+    });
+
+    // Refresh data for each page
+    if (name === 'home')    updateHome();
+   if (name === 'track') {
+  renderTxList();
+  checkBudgetAlert();
+}
+    if (name === 'reports') updateReports();
+  }
+
+  // ── TOTALS ────────────────────────────────────────────────────
+  function calcTotals() {
+    const txs = getTx();
+    const income  = txs.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+    const expense = txs.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+    return { income, expense, balance: income - expense };
+  }
+
+  function fmt(n) {
+    return '₹' + Math.abs(n).toFixed(2);
+  }
+
+  // ── HOME UPDATE ───────────────────────────────────────────────
+  function updateHome() {
+    const { income, expense, balance } = calcTotals();
+    document.getElementById('home-income').textContent  = fmt(income);
+    document.getElementById('home-expense').textContent = fmt(expense);
+    const balEl = document.getElementById('home-balance');
+    balEl.textContent = (balance < 0 ? '-' : '') + fmt(balance);
+    balEl.className = 'stat-value ' + (balance < 0 ? 'expense' : 'balance');
+  }
+
+  // ── SAVE TRANSACTION ──────────────────────────────────────────
+  function saveTransaction() {
+    const title    = document.getElementById('tx-title').value.trim();
+    const amount   = parseFloat(document.getElementById('tx-amount').value);
+    const type     = document.getElementById('tx-type').value;
+    const category = document.getElementById('tx-category').value;
+    const date     = document.getElementById('tx-date').value;
+    const err      = document.getElementById('tx-error');
+    const budgetInput = document.getElementById('monthly-budget').value;
+if (budgetInput) setBudget(budgetInput);
+
+    if (!title || isNaN(amount) || amount <= 0 || !category || !date) {
+      err.style.display = 'block';
+      return;
+    }
+    err.style.display = 'none';
+
+    const txs = getTx();
+    txs.unshift({ id: Date.now(), title, amount, type, category, date });
+    setTx(txs);
+
+    // Reset form
+    document.getElementById('tx-title').value    = '';
+    document.getElementById('tx-amount').value   = '';
+    document.getElementById('tx-category').value = '';
+    document.getElementById('tx-date').valueAsDate = new Date();
+
+    renderTxList();
+  }
+
+  // ── RENDER TRANSACTION LIST ───────────────────────────────────
+  function renderTxList() {
+    const txs = getTx();
+    const list = document.getElementById('tx-list');
+
+    if (txs.length === 0) {
+      list.innerHTML = '<p class="empty-state">No transactions yet. Add one!</p>';
+      return;
+    }
+
+    list.innerHTML = txs.map(t => `
+      <div class="tx-item">
+        <div class="tx-info">
+          <div class="tx-title">${t.title}</div>
+          <div class="tx-meta">
+            ${t.date} • ${t.type}
+            <span class="tx-tag">${t.category}</span>
+          </div>
+        </div>
+        <div class="tx-right">
+          <span class="tx-amount ${t.type}">₹${t.amount.toFixed(2)}</span>
+          <button class="tx-delete" onclick="deleteTransaction(${t.id})" title="Delete">✕</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // ── DELETE TRANSACTION ────────────────────────────────────────
+  function deleteTransaction(id) {
+    setTx(getTx().filter(t => t.id !== id));
+    renderTxList();
+checkBudgetAlert();
+  }
+
+  // ── REPORTS UPDATE ────────────────────────────────────────────
+  function updateReports() {
+    const { income, expense, balance } = calcTotals();
+
+    document.getElementById('rep-income').textContent  = fmt(income);
+    document.getElementById('rep-expense').textContent = fmt(expense);
+    const balEl = document.getElementById('rep-balance');
+    balEl.textContent = (balance < 0 ? '-' : '') + fmt(balance);
+    balEl.className = 'stat-value ' + (balance < 0 ? 'expense' : 'balance');
+
+    renderChart(income, expense, balance);
+  }
+
+  // ── BAR CHART ─────────────────────────────────────────────────
+  function renderChart(income, expense, balance) {
+    const ctx = document.getElementById('bar-chart').getContext('2d');
+    if (barChart) barChart.destroy();
+
+    barChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: ['Income', 'Expense', 'Balance'],
+        datasets: [{
+          label: 'Amount (₹)',
+          data: [income, expense, balance],
+          backgroundColor: ['#22c55e', '#ef4444', '#3b82f6'],
+          borderRadius: 6,
+          barThickness: 80,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: ctx => ` Amount (₹): ${ctx.parsed.y.toLocaleString('en-IN')}`
+            }
+          }
+        },
+        scales: {
+          x: {
+            ticks: { color: '#94a3b8' },
+            grid: { color: '#1e2d4a' }
+          },
+          y: {
+            ticks: { color: '#94a3b8' },
+            grid: { color: '#1e2d4a' }
+          }
+        }
+      }
+    });
+  }
+ function checkBudgetAlert() {
+  const budget = getBudget();
+  const { expense } = calcTotals();
+  const alertBox = document.getElementById('budget-alert');
+
+  if (budget > 0 && expense > budget) {
+    alertBox.style.display = 'block';
+  } else {
+    alertBox.style.display = 'none';
+  }
+}
+</script>
+
+<!-- ============================================================
+     JAVASCRIPT ENDS HERE
+============================================================ -->
+
+</body>
+</html>
