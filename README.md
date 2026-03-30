@@ -81,11 +81,17 @@ No installation required 🚀
 
 📸 Screenshots
 
-![Login](./login.png)
-![Home](./home.png)
-![Track-Funds](./track-funds.png)
-![Reports](./reports.png)
+   🔐 Login Page
+      ![Login](./LOGIN.png)
 
+   🏠 Home Dashboard
+      ![Home](./HOME.png)
+
+   💸 Track Funds
+      ![Track-Funds](./TRACK-FUNDS.png)
+
+   📊 Reports
+      ![Reports](./REPORTS.png)
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 📌 Future Improvements
